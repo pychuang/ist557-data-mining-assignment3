@@ -1,0 +1,13 @@
+# Assignment 3: Classification Model Comparison
+
+Data
+* training data: 380 training samples, the first 9 columns as 9 features, the last column as label (0 or 1). Download the data here: train.txt
+* testing data: 82 testing samples, the first 9 columns as 9 features, no label provided. Download the data here: test.txt
+ 
+Use 5-fold cross validation to compare the performance for all these methods: (1) decision tree, (2) random forest, (3) gradient tree boosting, (4) SVM, (5) LDA, (6) logistic regression, and (7) KNN. You can use any package to run these models. Use the training data in the DATA shown above. Report the average accuracy and standard deviation for each method. Note that, for fair comparison, you should use the same folds for train and test across all the methods. Submit the report as a Word or PDF file.
+
+Use your best model on the testing data in the DATA shown above. Submit a result file with only 0s and 1s, where each row corresponds to your predicted label for each testing sample. Note: (1) Please name the result file as “label.txt”. (2) This file should have and only have 82 rows, with each row as 0 or 1.
+
+Grading will be based on the report and the accuracy of your prediction result. You could get bonus points if your prediction accuracy is much higher than the rest of the class; but could also lose many points if the accuracy is much lower than the rest of the class.
+
+Parameter tuning: Parameter tuning is not required in the report. But in order to get higher accuracy in the testing, you are recommended to test different parameter settings using the nested cross-validation in order to find the “true” best model. If you do parameter tuning, please also include it in the report so we know you tried it in this assignment.
