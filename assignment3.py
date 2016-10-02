@@ -47,7 +47,7 @@ def find_best_model(X, y):
         ]),
         (SVC, [
 #            {'C': [math.pow(10, power) for power in xrange(-4, 5)], 'kernel': ['linear', 'poly', 'rbf', 'sigmoid'], 'gamma': [math.pow(2, power) for power in xrange(-4, 5)]}
-            {'C': [math.pow(10, power) for power in xrange(-4, 5)], 'kernel': ['rbf', 'sigmoid'], 'gamma': [math.pow(2, power) for power in xrange(-4, 5)]}
+            {'C': [math.pow(10, power) for power in xrange(-4, 5)], 'kernel': ['poly', 'rbf', 'sigmoid'], 'gamma': [math.pow(2, power) for power in xrange(-4, 5)]}
         ]),
         (LinearDiscriminantAnalysis, [
             {'solver': ['svd']},
