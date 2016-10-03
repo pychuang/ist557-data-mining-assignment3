@@ -2,11 +2,11 @@
 import math
 import numpy as np
 from sklearn import cross_validation
-from sklearn import grid_search
 from sklearn import preprocessing
 from sklearn.discriminant_analysis import LinearDiscriminantAnalysis
 from sklearn.ensemble import GradientBoostingClassifier
 from sklearn.ensemble import RandomForestClassifier
+from sklearn.linear_model import LogisticRegression
 from sklearn.tree import DecisionTreeClassifier
 from sklearn.svm import SVC
 
@@ -34,6 +34,22 @@ def load_test_set():
     return np.array(X)
 
 
+def iter_param_grid(param_grid):
+    def iter_internal(param_row, result, keys):
+        if not keys:
+            yield result
+        else:
+            k = keys[0]
+            for v in param_row[k]:
+                result[k] = v
+                for r in iter_internal(param_row, result, keys[1:]):
+                    yield r
+
+    for param_row in param_grid:
+        for result in iter_internal(param_row, {}, param_row.keys()):
+            yield result
+
+
 def find_best_model(X, y):
     models = [
         (DecisionTreeClassifier, [
@@ -46,27 +62,50 @@ def find_best_model(X, y):
             {'loss': ['deviance', 'exponential'], 'max_depth': [None, 1, 2,3,4], 'min_samples_split': [1,2,3,4] }
         ]),
         (SVC, [
-#            {'C': [math.pow(10, power) for power in xrange(-4, 5)], 'kernel': ['linear', 'poly', 'rbf', 'sigmoid'], 'gamma': [math.pow(2, power) for power in xrange(-4, 5)]}
-            {'C': [math.pow(10, power) for power in xrange(-4, 5)], 'kernel': ['poly', 'rbf', 'sigmoid'], 'gamma': [math.pow(2, power) for power in xrange(-4, 5)]}
+            {'C': [math.pow(10, power) for power in xrange(-4, 5)], 'kernel': ['poly', 'rbf', 'sigmoid'], 'gamma': ['auto'] + [math.pow(2, power) for power in xrange(-4, 5)]}
         ]),
         (LinearDiscriminantAnalysis, [
             {'solver': ['svd']},
             {'solver': ['lsqr', 'eigen'], 'shrinkage': [None, 'auto']}
         ]),
+        (LogisticRegression, [
+            {'solver': ['newton-cg','lbfgs', 'sag'], 'C': [math.pow(10, power) for power in xrange(-4, 5)],},
+            {'solver': ['liblinear'], 'penalty': ['l1', 'l2'], 'C': [math.pow(10, power) for power in xrange(-4, 5)],},
+        ]),
     ]
 
     best_score = 0
-    best_gs = None
+    best_model = None
+    best_params = None
+
+    indices = []
+    # 5-fold
+    for train_index, valid_index in cross_validation.KFold(n=len(X), n_folds=5, shuffle=True):
+        indices.append((train_index, valid_index))
+
     for estimatorclass, param_grid in models:
-        print "Train %s" % estimatorclass.__name__
-        gs = grid_search.GridSearchCV(estimator=estimatorclass(), param_grid=param_grid, cv=5)
-        gs.fit(X, y)
-        print "best params = %s\nbest score = %f\n" % (gs.best_params_, gs.best_score_)
-        if gs.best_score_> best_score:
-            best_score = gs.best_score_
-            best_gs = gs
-    print "Best estimator: %s with params %s, best score: %f" % (type(best_gs.best_estimator_).__name__, best_gs.best_params_, best_gs.best_score_)
-    return best_gs
+        for params in iter_param_grid(param_grid):
+            scores = []
+            for train_index, valid_index in indices:
+                X_train = X[train_index]
+                y_train = y[train_index]
+                X_valid = X[valid_index]
+                y_valid = y[valid_index]
+
+                estimator = estimatorclass(**params).fit(X_train, y_train)
+                score = estimator.score(X_valid, y_valid)
+                scores.append(score)
+
+            avg_score = sum(scores) / len(scores)
+            print "%s with params %s:\t%f" % (estimatorclass.__name__, params, avg_score)
+            if avg_score > best_score:
+                best_score = avg_score
+                best_model = estimator
+                best_params = params
+
+    print
+    print "Best model: %s with params %s, best score: %f" % (type(best_model).__name__, best_params, best_score)
+    return best_model
 
 
 def main():
@@ -74,13 +113,14 @@ def main():
     # normalize each feature
     X_train = preprocessing.scale(X_train)
 
-    gs = find_best_model(X_train, y_train)
+    model = find_best_model(X_train, y_train)
 
     X_test = load_test_set()
     # normalize each feature
     X_test = preprocessing.scale(X_test)
 
-    y_test = gs.predict(X_test)
+    y_test = model.predict(X_test)
+    print
     print y_test
     with open('label.txt', 'w') as f:
         for y in y_test:
